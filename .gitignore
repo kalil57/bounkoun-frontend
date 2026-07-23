@@ -1,0 +1,20 @@
+node_modules
+dist
+.DS_Store
+*.local
+.env
+.env.local
+
+# Backup folders & sub-projects
+Bounkoun1/
+Bounkoun1_clean/
+bounkoun-frontend/
+bounkoun-frontend_clean_git/
+bounkoun-frontend_fresh/
+Bounkoun-Literature/
+Bounkoun-WritingEngine/
+.git_backup/
+assets/
+tests/
+bounkoun_db.json
+bun.lock

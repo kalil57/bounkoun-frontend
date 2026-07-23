@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    color: #2C2A29;
+    background-color: #F8F6F0;
+  }
+}
+
+/* TipTap Editor Styling for Academic Writing Environment */
+.ProseMirror {
+  outline: none !important;
+  min-height: 600px;
+  padding: 3rem 3.5rem;
+  background-color: #FFFFFF;
+  color: #1F1D1B;
+  box-shadow: 0 4px 20px -2px rgba(44, 42, 41, 0.05), 0 1px 3px rgba(0,0,0,0.03);
+  border-radius: 4px;
+  border: 1px solid #EAE5DC;
+  font-family: 'Times New Roman', 'EB Garamond', Georgia, serif;
+  font-size: 12pt;
+  line-height: 2.0;
+  transition: all 0.2s ease;
+}
+
+.ProseMirror:focus {
+  border-color: #D4C5B0;
+  box-shadow: 0 6px 24px -2px rgba(44, 42, 41, 0.08), 0 0 0 1px #D4C5B0;
+}
+
+/* Academic Paragraph & Line Spacing Settings */
+.ProseMirror p {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror p[data-indent="true"],
+.ProseMirror p.indent-academic {
+  text-indent: 1.27cm;
+}
+
+.ProseMirror p[data-line-height="1.0"] { line-height: 1.0; }
+.ProseMirror p[data-line-height="1.15"] { line-height: 1.15; }
+.ProseMirror p[data-line-height="1.5"] { line-height: 1.5; }
+.ProseMirror p[data-line-height="2.0"] { line-height: 2.0; }
+
+.ProseMirror h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #1A1817;
+  line-height: 1.3;
+}
+
+.ProseMirror h2 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: #2C2A29;
+  line-height: 1.35;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #8C7A6B;
+  padding-left: 1.25rem;
+  margin-left: 1rem;
+  margin-right: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-style: italic;
+  color: #4A4643;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Citation mark highlight in editor */
+.citation-mark {
+  background-color: #F1EAE0;
+  border-bottom: 1.5px solid #A38B73;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 500;
+  color: #3D332A;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.citation-mark:hover {
+  background-color: #E6DBCB;
+}
+
+/* Selected text background styling */
+.ProseMirror ::selection {
+  background: #E8DFD1;
+  color: #1A1817;
+}
+
+/* Custom Scrollbar for Academic Environment */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F4F0E8;
+}
+::-webkit-scrollbar-thumb {
+  background: #D8CFBE;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B8AC9A;
+}
