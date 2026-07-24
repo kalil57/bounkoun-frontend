@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -103,6 +103,9 @@ export default function Workspace() {
   const [searchingPapers, setSearchingPapers] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [shortlist, setShortlist] = useState<Paper[]>([]);
+  const [uploadingPaper, setUploadingPaper] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [addingPaperId, setAddingPaperId] = useState<string | null>(null);
   const [removingPaperId, setRemovingPaperId] = useState<string | null>(null);
   const [recommendation, setRecommendation] = useState<LiteratureRecommendation | null>(null);
@@ -292,6 +295,33 @@ export default function Workspace() {
       setSearchError(err.message || "Search failed.");
     } finally {
       setSearchingPapers(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPaper(true);
+    setUploadError(null);
+    try {
+      const literatureApiUrl = apiBaseUrl.replace("bounkoun-core", "bounkoun-literature");
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${literatureApiUrl}/upload/${id}`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Could not process this PDF.");
+      }
+      const data = await res.json();
+      setShortlist((prev) => [...prev, data]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err: any) {
+      setUploadError(err.message || "Upload failed.");
+    } finally {
+      setUploadingPaper(false);
     }
   };
 
@@ -904,6 +934,24 @@ export default function Workspace() {
                       </button>
                     </div>
                     {searchError && <p className="text-xs text-red-700 font-medium">{searchError}</p>}
+                  </div>
+
+                  <div className="bg-cream border border-border-warm p-5 rounded-lg space-y-3">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                      Or Upload Your Own Paper (PDF)
+                    </label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        className="text-xs text-ink-muted file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-light file:text-brand hover:file:bg-brand hover:file:text-white file:cursor-pointer cursor-pointer"
+                        disabled={uploadingPaper}
+                      />
+                      {uploadingPaper && <Loader2 className="h-4 w-4 animate-spin text-brand" />}
+                    </div>
+                    {uploadError && <p className="text-xs text-red-700 font-medium">{uploadError}</p>}
                   </div>
 
                   {searchResults.length > 0 && (
