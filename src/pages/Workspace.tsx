@@ -18,7 +18,12 @@ import {
   BookOpen,
   Pencil,
   ExternalLink,
-  HelpCircle
+  HelpCircle,
+  Bold,
+  Italic,
+  List,
+  Heading2,
+  ListOrdered
 } from "lucide-react";
 
 interface Project {
@@ -141,6 +146,7 @@ export default function Workspace() {
 
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [savingEditId, setSavingEditId] = useState<string | null>(null);
   const [stylePreferenceDraft, setStylePreferenceDraft] = useState("");
   const [savingStylePreference, setSavingStylePreference] = useState(false);
@@ -577,6 +583,23 @@ export default function Workspace() {
     } finally {
       setLoadingGuidance(false);
     }
+  };
+
+  const applyFormatting = (type: "bold" | "italic" | "bullet" | "heading" | "numbered") => {
+    const textarea = editTextareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = editDraft.slice(start, end) || "text";
+    let wrapped = selected;
+    if (type === "bold") wrapped = `**${selected}**`;
+    if (type === "italic") wrapped = `*${selected}*`;
+    if (type === "bullet") wrapped = selected.split("\n").map((line) => `- ${line}`).join("\n");
+    if (type === "heading") wrapped = selected.split("\n").map((line) => `## ${line}`).join("\n");
+    if (type === "numbered") wrapped = selected.split("\n").map((line, idx) => `${idx + 1}. ${line}`).join("\n");
+    const newValue = editDraft.slice(0, start) + wrapped + editDraft.slice(end);
+    setEditDraft(newValue);
+    setTimeout(() => textarea.focus(), 0);
   };
 
   const handleStartEdit = (sectionId: string, currentContent: string) => {
@@ -1690,7 +1713,50 @@ export default function Workspace() {
                             <div className="p-6 md:p-8 space-y-4">
                               {editingSectionId === sec.id ? (
                                 <div className="space-y-3">
+                                  <div className="flex items-center gap-1 border-b border-stone-200 pb-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => applyFormatting("bold")}
+                                      className="p-1.5 rounded hover:bg-stone-100 text-stone-700 transition-colors"
+                                      title="Bold"
+                                    >
+                                      <Bold className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => applyFormatting("italic")}
+                                      className="p-1.5 rounded hover:bg-stone-100 text-stone-700 transition-colors"
+                                      title="Italic"
+                                    >
+                                      <Italic className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => applyFormatting("heading")}
+                                      className="p-1.5 rounded hover:bg-stone-100 text-stone-700 transition-colors"
+                                      title="Heading"
+                                    >
+                                      <Heading2 className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => applyFormatting("bullet")}
+                                      className="p-1.5 rounded hover:bg-stone-100 text-stone-700 transition-colors"
+                                      title="Bullet List"
+                                    >
+                                      <List className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => applyFormatting("numbered")}
+                                      className="p-1.5 rounded hover:bg-stone-100 text-stone-700 transition-colors"
+                                      title="Numbered List"
+                                    >
+                                      <ListOrdered className="h-4 w-4" />
+                                    </button>
+                                  </div>
                                   <textarea
+                                    ref={editTextareaRef}
                                     value={editDraft}
                                     onChange={(e) => setEditDraft(e.target.value)}
                                     rows={8}
