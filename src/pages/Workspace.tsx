@@ -17,7 +17,8 @@ import {
   X,
   BookOpen,
   Pencil,
-  ExternalLink
+  ExternalLink,
+  HelpCircle
 } from "lucide-react";
 
 interface Project {
@@ -133,6 +134,10 @@ export default function Workspace() {
   const [generatingAbstract, setGeneratingAbstract] = useState(false);
   const [abstractError, setAbstractError] = useState<string | null>(null);
   const [completingWriting, setCompletingWriting] = useState(false);
+
+  const [guidanceSectionId, setGuidanceSectionId] = useState<string | null>(null);
+  const [guidance, setGuidance] = useState<{ purpose: string; guiding_questions: string[]; encouragement: string } | null>(null);
+  const [loadingGuidance, setLoadingGuidance] = useState(false);
 
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
@@ -551,6 +556,26 @@ export default function Workspace() {
       alert(err.message || "Failed to generate draft.");
     } finally {
       setGeneratingSectionId(null);
+    }
+  };
+
+  const handleAskForHelp = async (sectionId: string, currentDraft: string) => {
+    setGuidanceSectionId(sectionId);
+    setGuidance(null);
+    setLoadingGuidance(true);
+    try {
+      const res = await fetch(`${apiBaseUrl}/sections/${sectionId}/guidance`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ current_draft: currentDraft }),
+      });
+      if (!res.ok) throw new Error("Could not get guidance right now.");
+      const data = await res.json();
+      setGuidance(data);
+    } catch (err: any) {
+      alert(err.message || "Failed to get guidance.");
+    } finally {
+      setLoadingGuidance(false);
     }
   };
 
@@ -1575,6 +1600,14 @@ export default function Workspace() {
                             </div>
 
                             <div className="flex items-center gap-2 flex-wrap">
+                              <button
+                                onClick={() => handleAskForHelp(sec.id, sec.content || "")}
+                                className="inline-flex items-center gap-1 rounded bg-amber-50 hover:bg-amber-100 text-[11px] font-bold text-amber-800 px-3 py-1.5 transition-colors border border-amber-200"
+                              >
+                                <HelpCircle className="h-3.5 w-3.5" />
+                                <span>Ask Bounkoun for Help</span>
+                              </button>
+
                               {sec.content ? (
                                 <>
                                   <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-md">
@@ -1695,6 +1728,37 @@ export default function Workspace() {
                                 <span>Word Count: ~{sec.content.split(/\s+/).filter(Boolean).length} words</span>
                                 <span>Double Spaced Academic Style</span>
                               </div>
+                            </div>
+                          )}
+
+                          {guidanceSectionId === sec.id && (
+                            <div className="border-t border-amber-200 bg-amber-50/40 p-6 space-y-4 text-left">
+                              {loadingGuidance ? (
+                                <div className="flex items-center gap-2 text-amber-800 text-sm">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  <span>Thinking through this with you...</span>
+                                </div>
+                              ) : guidance ? (
+                                <>
+                                  <div>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block mb-1">What This Section Needs To Do</span>
+                                    <p className="text-sm text-ink leading-relaxed">{guidance.purpose}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block mb-2">Think Through These</span>
+                                    <ul className="space-y-2">
+                                      {guidance.guiding_questions.map((q, i) => (
+                                        <li key={i} className="text-sm text-ink leading-relaxed pl-4 relative">
+                                          <span className="absolute left-0 text-amber-700 font-bold">{i + 1}.</span>
+                                          {q}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                  <p className="text-xs text-amber-900 italic">{guidance.encouragement}</p>
+                                  <button onClick={() => setGuidanceSectionId(null)} className="text-xs font-semibold text-amber-800 hover:underline">Close</button>
+                                </>
+                              ) : null}
                             </div>
                           )}
 
