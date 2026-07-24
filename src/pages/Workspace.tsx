@@ -130,6 +130,7 @@ export default function Workspace() {
   const [questionLoading, setQuestionLoading] = useState(false);
   const [questionError, setQuestionError] = useState<string | null>(null);
   const [finalizedQuestion, setFinalizedQuestion] = useState<string>("");
+  const [allQuestions, setAllQuestions] = useState<{ id: string; text: string }[]>([]);
   const [questionValidation, setQuestionValidation] = useState<ValidationResult | null>(null);
   const [validatingQuestion, setValidatingQuestion] = useState(false);
 
@@ -206,6 +207,12 @@ export default function Workspace() {
         if (questionEvent?.payload?.question) {
           setFinalizedQuestion(questionEvent.payload.question);
         }
+      }
+
+      const allQuestionsRes = await fetch(`${apiBaseUrl}/question/${id}/all`);
+      if (allQuestionsRes.ok) {
+        const allQuestionsData = await allQuestionsRes.json();
+        setAllQuestions(allQuestionsData || []);
       }
 
       const selectedRes = await fetch(`${apiBaseUrl.replace("bounkoun-core", "bounkoun-literature")}/selection/${id}/selected`);
@@ -494,6 +501,7 @@ export default function Workspace() {
       });
 
       setFinalizedQuestion(questionText);
+      setAllQuestions((prev) => [...prev, { id: Date.now().toString(), text: questionText }]);
       await completeStep("ResearchQuestion");
       setActiveStage("Writing");
     } catch (err: any) {
@@ -1274,6 +1282,24 @@ export default function Workspace() {
                   Finalize a single, robust, rigorous academic research question, grounded in the literature you gathered.
                 </p>
               </div>
+
+              {allQuestions.length > 0 && (
+                <div className="rounded-lg border border-border-warm bg-stone-50 p-5 space-y-3">
+                  <h4 className="serif-heading text-sm font-bold text-brand">
+                    Your Finalized Research Questions ({allQuestions.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {allQuestions.map((q) => (
+                      <div key={q.id} className="p-3 bg-white border border-border-warm rounded-lg">
+                        <p className="text-sm font-serif italic text-ink leading-relaxed">"{q.text}"</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-ink-muted">
+                    You can add another research question below if your thesis explores multiple angles.
+                  </p>
+                </div>
+              )}
 
               {!project.selected_topic ? (
                 <div className="rounded-lg border border-yellow-200 bg-yellow-50/40 p-5 flex items-start gap-3">
