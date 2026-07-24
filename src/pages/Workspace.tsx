@@ -37,6 +37,10 @@ interface Project {
   abstract?: string | null;
   keywords?: string[] | null;
   style_preference?: string | null;
+  citation_style?: string | null;
+  formality_preset?: string | null;
+  writing_language?: string | null;
+  font_family?: string | null;
 }
 
 interface WorkflowStep {
@@ -149,6 +153,10 @@ export default function Workspace() {
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [savingEditId, setSavingEditId] = useState<string | null>(null);
   const [stylePreferenceDraft, setStylePreferenceDraft] = useState("");
+  const [citationStyleDraft, setCitationStyleDraft] = useState("");
+  const [formalityDraft, setFormalityDraft] = useState("");
+  const [writingLanguageDraft, setWritingLanguageDraft] = useState("English");
+  const [fontFamilyDraft, setFontFamilyDraft] = useState("Times New Roman");
   const [savingStylePreference, setSavingStylePreference] = useState(false);
 
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
@@ -166,6 +174,10 @@ export default function Workspace() {
       const projectData = await projectRes.json();
       setProject(projectData);
       setStylePreferenceDraft(projectData.style_preference || "");
+      setCitationStyleDraft(projectData.citation_style || "");
+      setFormalityDraft(projectData.formality_preset || "");
+      setWritingLanguageDraft(projectData.writing_language || "English");
+      setFontFamilyDraft(projectData.font_family || "Times New Roman");
       setLiteratureQuery(projectData.selected_topic || "");
 
       const stepsRes = await fetch(`${apiBaseUrl}/workflow/${id}`);
@@ -644,11 +656,28 @@ export default function Workspace() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ style_preference: stylePreferenceDraft }),
+        body: JSON.stringify({
+          style_preference: stylePreferenceDraft,
+          citation_style: citationStyleDraft,
+          formality_preset: formalityDraft,
+          writing_language: writingLanguageDraft,
+          font_family: fontFamilyDraft,
+        }),
       });
       if (!res.ok) throw new Error("Could not save your style preference.");
       const data = await res.json();
-      setProject((prev) => (prev ? { ...prev, style_preference: data.style_preference } : prev));
+      setProject((prev) =>
+        prev
+          ? {
+              ...prev,
+              style_preference: data.style_preference,
+              citation_style: data.citation_style,
+              formality_preset: data.formality_preset,
+              writing_language: data.writing_language,
+              font_family: data.font_family,
+            }
+          : prev
+      );
     } catch (err: any) {
       alert(err.message || "Failed to save style preference.");
     } finally {
@@ -1470,6 +1499,60 @@ export default function Workspace() {
                       rows={2}
                       className="w-full text-sm border border-stone-300 rounded-lg p-3 bg-white text-ink"
                     />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 pt-3 border-t border-border-warm">
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-ink-muted mb-1">Citation Style</label>
+                        <select
+                          value={citationStyleDraft}
+                          onChange={(e) => setCitationStyleDraft(e.target.value)}
+                          className="w-full text-xs border border-stone-300 rounded-lg p-2 bg-white text-ink"
+                        >
+                          <option value="">Default</option>
+                          <option value="APA">APA</option>
+                          <option value="MLA">MLA</option>
+                          <option value="Chicago">Chicago</option>
+                          <option value="GBT7714">GB/T 7714</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-ink-muted mb-1">Tone</label>
+                        <select
+                          value={formalityDraft}
+                          onChange={(e) => setFormalityDraft(e.target.value)}
+                          className="w-full text-xs border border-stone-300 rounded-lg p-2 bg-white text-ink"
+                        >
+                          <option value="">Default</option>
+                          <option value="Formal">Formal</option>
+                          <option value="Analytical">Analytical</option>
+                          <option value="Direct">Direct</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-ink-muted mb-1">Writing Language</label>
+                        <select
+                          value={writingLanguageDraft}
+                          onChange={(e) => setWritingLanguageDraft(e.target.value)}
+                          className="w-full text-xs border border-stone-300 rounded-lg p-2 bg-white text-ink"
+                        >
+                          <option value="English">English</option>
+                          <option value="Chinese">中文 (Chinese)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-ink-muted mb-1">Font</label>
+                        <select
+                          value={fontFamilyDraft}
+                          onChange={(e) => setFontFamilyDraft(e.target.value)}
+                          className="w-full text-xs border border-stone-300 rounded-lg p-2 bg-white text-ink"
+                        >
+                          <option value="Times New Roman">Times New Roman</option>
+                          <option value="Arial">Arial</option>
+                          <option value="Calibri">Calibri</option>
+                          <option value="Cambria">Cambria</option>
+                          <option value="Georgia">Georgia</option>
+                        </select>
+                      </div>
+                    </div>
                     <div className="mt-2 flex justify-end">
                       <button
                         onClick={handleSaveStylePreference}
@@ -1535,6 +1618,60 @@ export default function Workspace() {
                       rows={2}
                       className="w-full text-sm border border-stone-300 rounded-lg p-3 bg-white text-ink"
                     />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 pt-3 border-t border-border-warm">
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-ink-muted mb-1">Citation Style</label>
+                        <select
+                          value={citationStyleDraft}
+                          onChange={(e) => setCitationStyleDraft(e.target.value)}
+                          className="w-full text-xs border border-stone-300 rounded-lg p-2 bg-white text-ink"
+                        >
+                          <option value="">Default</option>
+                          <option value="APA">APA</option>
+                          <option value="MLA">MLA</option>
+                          <option value="Chicago">Chicago</option>
+                          <option value="GBT7714">GB/T 7714</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-ink-muted mb-1">Tone</label>
+                        <select
+                          value={formalityDraft}
+                          onChange={(e) => setFormalityDraft(e.target.value)}
+                          className="w-full text-xs border border-stone-300 rounded-lg p-2 bg-white text-ink"
+                        >
+                          <option value="">Default</option>
+                          <option value="Formal">Formal</option>
+                          <option value="Analytical">Analytical</option>
+                          <option value="Direct">Direct</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-ink-muted mb-1">Writing Language</label>
+                        <select
+                          value={writingLanguageDraft}
+                          onChange={(e) => setWritingLanguageDraft(e.target.value)}
+                          className="w-full text-xs border border-stone-300 rounded-lg p-2 bg-white text-ink"
+                        >
+                          <option value="English">English</option>
+                          <option value="Chinese">中文 (Chinese)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-ink-muted mb-1">Font</label>
+                        <select
+                          value={fontFamilyDraft}
+                          onChange={(e) => setFontFamilyDraft(e.target.value)}
+                          className="w-full text-xs border border-stone-300 rounded-lg p-2 bg-white text-ink"
+                        >
+                          <option value="Times New Roman">Times New Roman</option>
+                          <option value="Arial">Arial</option>
+                          <option value="Calibri">Calibri</option>
+                          <option value="Cambria">Cambria</option>
+                          <option value="Georgia">Georgia</option>
+                        </select>
+                      </div>
+                    </div>
                     <div className="mt-2 flex justify-end">
                       <button
                         onClick={handleSaveStylePreference}
