@@ -1898,6 +1898,21 @@ export default function Workspace() {
                       </div>
                       <Download className="h-5 w-5 text-brand" />
                     </a>
+
+                    <a
+                      href={`${apiBaseUrl}/export/${project.id}/pdf`}
+                      download={`thesis-${project.id}.pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-4 bg-white border border-border-warm rounded-lg hover:border-brand/40 transition-all text-left"
+                    >
+                      <div>
+                        <span className="text-[10px] font-mono text-brand uppercase font-bold block mb-0.5">Asset Type</span>
+                        <span className="text-sm font-semibold text-ink">Download as PDF</span>
+                        <span className="text-xs text-ink-muted block mt-0.5">Portable document format (.pdf)</span>
+                      </div>
+                      <Download className="h-5 w-5 text-brand" />
+                    </a>
                   </div>
                 </div>
               </div>

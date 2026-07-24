@@ -1,6 +1,6 @@
 import React from 'react';
-import { BubbleMenu, Editor } from '@tiptap/react';
-import { Bold, Italic, Sparkles, BookMarked, RefreshCw, MessageSquareQuote } from 'lucide-react';
+import { Editor } from '@tiptap/react';
+import { Bold, Italic, Sparkles, BookMarked, RefreshCw } from 'lucide-react';
 
 interface SelectionBubbleMenuProps {
   editor: Editor | null;
@@ -13,16 +13,11 @@ export const SelectionBubbleMenu: React.FC<SelectionBubbleMenuProps> = ({
   onOpenAI,
   onOpenCitations,
 }) => {
-  if (!editor) return null;
+  if (!editor || editor.state.selection.empty || !editor.isEditable) return null;
 
   return (
-    <BubbleMenu
-      editor={editor}
-      tippyOptions={{ duration: 150, placement: 'top' }}
-      shouldShow={({ editor }) => {
-        return !editor.state.selection.empty && editor.isEditable;
-      }}
-      className="flex items-center gap-1 bg-[#1A1817] text-white p-1.5 rounded-xl shadow-2xl border border-[#3D3833] z-50 animate-in fade-in zoom-in-95 duration-100"
+    <div
+      className="flex items-center gap-1 bg-[#1A1817] text-white p-1.5 rounded-xl shadow-2xl border border-[#3D3833] z-50"
     >
       <button
         onClick={() => editor.chain().focus().toggleBold().run()}
@@ -72,6 +67,6 @@ export const SelectionBubbleMenu: React.FC<SelectionBubbleMenuProps> = ({
         <Sparkles className="w-3.5 h-3.5" />
         Critique
       </button>
-    </BubbleMenu>
+    </div>
   );
 };
