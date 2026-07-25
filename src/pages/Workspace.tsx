@@ -145,6 +145,9 @@ export default function Workspace() {
   const [abstractError, setAbstractError] = useState<string | null>(null);
   const [completingWriting, setCompletingWriting] = useState(false);
 
+  const [documentHealth, setDocumentHealth] = useState<{ overall: number; argument: number; evidence: number; transitions: number; citations: number; top_issues: string[] } | null>(null);
+  const [loadingHealth, setLoadingHealth] = useState(false);
+
   const [guidanceSectionId, setGuidanceSectionId] = useState<string | null>(null);
   const [guidance, setGuidance] = useState<{ purpose: string; guiding_questions: string[]; encouragement: string } | null>(null);
   const [loadingGuidance, setLoadingGuidance] = useState(false);
@@ -708,6 +711,22 @@ export default function Workspace() {
       alert(err.message || "Failed to analyze section.");
     } finally {
       setValidatingSectionId(null);
+    }
+  };
+
+  const handleCheckHealth = async () => {
+    setLoadingHealth(true);
+    try {
+      const res = await fetch(`${apiBaseUrl}/sections/${id}/health`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Could not check document health right now.");
+      const data = await res.json();
+      setDocumentHealth(data);
+    } catch (err: any) {
+      alert(err.message || "Failed to check document health.");
+    } finally {
+      setLoadingHealth(false);
     }
   };
 
@@ -2092,6 +2111,58 @@ export default function Workspace() {
                       <p className="text-xs text-ink-muted">
                         Draft all {chapters.length} chapters ({draftedChapterCount}/{chapters.length} complete) to unlock abstract generation.
                       </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-lg border border-border-warm bg-white p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="serif-heading text-sm font-bold text-brand">Document Health</h4>
+                      <button
+                        onClick={handleCheckHealth}
+                        disabled={loadingHealth}
+                        className="text-xs font-semibold text-brand hover:underline disabled:opacity-50"
+                      >
+                        {loadingHealth ? "Checking..." : documentHealth ? "Refresh" : "Check Now"}
+                      </button>
+                    </div>
+                    {documentHealth && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl font-bold text-brand">{documentHealth.overall}%</span>
+                          <span className="text-xs text-ink-muted">Overall quality across your drafted chapters</span>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                          <div className="bg-stone-50 rounded p-2">
+                            <span className="block text-ink-muted">Argument</span>
+                            <span className="font-bold text-ink">{documentHealth.argument}%</span>
+                          </div>
+                          <div className="bg-stone-50 rounded p-2">
+                            <span className="block text-ink-muted">Evidence</span>
+                            <span className="font-bold text-ink">{documentHealth.evidence}%</span>
+                          </div>
+                          <div className="bg-stone-50 rounded p-2">
+                            <span className="block text-ink-muted">Transitions</span>
+                            <span className="font-bold text-ink">{documentHealth.transitions}%</span>
+                          </div>
+                          <div className="bg-stone-50 rounded p-2">
+                            <span className="block text-ink-muted">Citations</span>
+                            <span className="font-bold text-ink">{documentHealth.citations}%</span>
+                          </div>
+                        </div>
+                        {documentHealth.top_issues && documentHealth.top_issues.length > 0 && (
+                          <div>
+                            <span className="text-xs font-semibold text-ink-muted block mb-1">Worth addressing:</span>
+                            <ul className="space-y-1">
+                              {documentHealth.top_issues.map((issue: string, i: number) => (
+                                <li key={i} className="text-xs text-ink leading-relaxed pl-3 relative">
+                                  <span className="absolute left-0 text-brand">•</span>
+                                  {issue}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
 
