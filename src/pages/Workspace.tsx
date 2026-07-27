@@ -1,3 +1,5 @@
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -87,6 +89,23 @@ interface LiteratureRecommendation {
   suggested_variables: string[];
   supporting_paper_ids: string[];
   created_at: string;
+}
+
+
+function SectionEditor({ initialContent, onChange }: { initialContent: string; onChange: (html: string) => void }) {
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: initialContent,
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+  });
+
+  return (
+    <div className="border border-stone-300 rounded-lg bg-white">
+      <EditorContent editor={editor} className="prose prose-sm max-w-none p-4 min-h-[200px] focus:outline-none font-serif" />
+    </div>
+  );
 }
 
 export default function Workspace() {
@@ -1937,13 +1956,7 @@ export default function Workspace() {
                                       <ListOrdered className="h-4 w-4" />
                                     </button>
                                   </div>
-                                  <textarea
-                                    ref={editTextareaRef}
-                                    value={editDraft}
-                                    onChange={(e) => setEditDraft(e.target.value)}
-                                    rows={8}
-                                    className="w-full text-sm border border-stone-300 rounded-lg p-3 bg-white text-ink font-serif"
-                                  />
+                                  <SectionEditor initialContent={editDraft} onChange={(html) => setEditDraft(html)} />
                                   <div className="flex justify-end gap-2">
                                     <button
                                       onClick={handleCancelEdit}
@@ -1968,9 +1981,16 @@ export default function Workspace() {
                                   </div>
                                 </div>
                               ) : (
+                                /<[a-z]/i.test(sec.content) ? (
+                                <div
+                                  className="prose prose-sm max-w-none font-serif"
+                                  dangerouslySetInnerHTML={{ __html: sec.content }}
+                                />
+                              ) : (
                                 <p className="font-serif text-sm md:text-base leading-relaxed text-ink text-justify whitespace-pre-line select-text">
                                   {sec.content}
                                 </p>
+                              )
                               )}
                               <div className="pt-4 border-t border-border-warm flex justify-between items-center text-[10px] text-ink-muted">
                                 <span>Word Count: ~{sec.content.split(/\s+/).filter(Boolean).length} words</span>
