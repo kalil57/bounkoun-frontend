@@ -3,6 +3,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { TextStyle } from "@tiptap/extension-text-style";
 import FontFamily from "@tiptap/extension-font-family";
 import { FontSize } from "../lib/FontSizeExtension";
+import Underline from "@tiptap/extension-underline";
 import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -26,6 +27,7 @@ import {
   HelpCircle,
   Bold,
   Italic,
+  Underline as UnderlineIcon,
   List,
   Heading2,
   ListOrdered,
@@ -99,7 +101,7 @@ interface LiteratureRecommendation {
 function SectionEditor({ initialContent, onChange }: { initialContent: string; onChange: (html: string) => void }) {
   const [showToolbar, setShowToolbar] = useState(false);
   const editor = useEditor({
-    extensions: [StarterKit, TextStyle, FontFamily, FontSize],
+    extensions: [StarterKit, TextStyle, FontFamily, FontSize, Underline],
     content: initialContent,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
@@ -130,6 +132,9 @@ function SectionEditor({ initialContent, onChange }: { initialContent: string; o
             </button>
             <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={btnClass(editor.isActive("italic"))} title="Italic">
               <Italic className="h-3.5 w-3.5" />
+            </button>
+            <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className={btnClass(editor.isActive("underline"))} title="Underline">
+              <UnderlineIcon className="h-3.5 w-3.5" />
             </button>
             <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={btnClass(editor.isActive("heading", { level: 2 }))} title="Heading">
               <Heading2 className="h-3.5 w-3.5" />
@@ -330,6 +335,23 @@ export default function Workspace() {
   useEffect(() => {
     fetchWorkspaceData();
   }, [id]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if (e.key.toLowerCase() !== "e") return;
+      e.preventDefault();
+      if (e.altKey) {
+        window.open(`${apiBaseUrl}/export/${id}/markdown`, "_blank");
+      } else if (e.shiftKey) {
+        window.open(`${apiBaseUrl}/export/${id}/pdf`, "_blank");
+      } else {
+        window.open(`${apiBaseUrl}/export/${id}/docx`, "_blank");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [id, apiBaseUrl]);
 
   const completeStep = async (stepName: WorkflowStep["step_name"]) => {
     try {
