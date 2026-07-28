@@ -1828,7 +1828,7 @@ export default function Workspace() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <button
                                 onClick={() => handleAskForHelp(sec.id, sec.content || "")}
-                                className="inline-flex items-center gap-1 rounded bg-amber-50 hover:bg-amber-100 text-[11px] font-bold text-amber-800 px-3 py-1.5 transition-colors border border-amber-200"
+                                className={sec.content ? "inline-flex items-center gap-1 rounded bg-amber-50 hover:bg-amber-100 text-[11px] font-bold text-amber-800 px-3 py-1.5 transition-colors border border-amber-200" : "inline-flex items-center gap-1.5 rounded bg-brand hover:bg-brand-hover text-[11px] font-bold text-white px-3.5 py-1.5 transition-colors"}
                               >
                                 <HelpCircle className="h-3.5 w-3.5" />
                                 <span>Ask Bounkoun for Help</span>
@@ -1869,14 +1869,14 @@ export default function Workspace() {
                                 <button
                                   onClick={() => handleGenerateDraft(sec.id)}
                                   disabled={isGen}
-                                  className="inline-flex items-center gap-1.5 rounded bg-brand hover:bg-brand-hover text-[11px] font-bold text-white px-3.5 py-1.5 transition-colors"
+                                  className={sec.content ? "inline-flex items-center gap-1.5 rounded bg-brand hover:bg-brand-hover text-[11px] font-bold text-white px-3.5 py-1.5 transition-colors" : "inline-flex items-center gap-1 text-[11px] font-medium text-stone-500 hover:text-stone-800 underline transition-colors"}
                                 >
                                   {isGen ? (
                                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                   ) : (
                                     <Sparkles className="h-3.5 w-3.5" />
                                   )}
-                                  <span>{sec.content ? "Regenerate Draft" : "Generate Draft (AI)"}</span>
+                                  <span>{sec.content ? "Regenerate Draft" : "Or, generate a first draft to edit instead"}</span>
                                 </button>
                               )}
                             </div>
