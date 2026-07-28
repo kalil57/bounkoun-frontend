@@ -31,7 +31,8 @@ import {
   List,
   Heading2,
   ListOrdered,
-  MoreHorizontal
+  MoreHorizontal,
+  Wand2
 } from "lucide-react";
 
 interface Project {
@@ -98,7 +99,7 @@ interface LiteratureRecommendation {
 }
 
 
-function SectionEditor({ initialContent, onChange }: { initialContent: string; onChange: (html: string) => void }) {
+function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token }: { initialContent: string; onChange: (html: string) => void; sectionId: string; apiBaseUrl: string; token: string | null }) {
   const [showToolbar, setShowToolbar] = useState(false);
   const editor = useEditor({
     extensions: [StarterKit, TextStyle, FontFamily, FontSize, Underline],
@@ -108,7 +109,42 @@ function SectionEditor({ initialContent, onChange }: { initialContent: string; o
     },
   });
 
+  const [rewriteSuggestion, setRewriteSuggestion] = useState<string | null>(null);
+  const [loadingRewrite, setLoadingRewrite] = useState(false);
+
   if (!editor) return null;
+
+  const handleRewrite = async () => {
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(from, to, " ");
+    if (!selectedText.trim()) {
+      alert("Select a paragraph or sentence first.");
+      return;
+    }
+    setLoadingRewrite(true);
+    setRewriteSuggestion(null);
+    try {
+      const res = await fetch(`${apiBaseUrl}/sections/${sectionId}/rewrite`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ paragraph_text: selectedText }),
+      });
+      if (!res.ok) throw new Error("Could not rewrite this text right now.");
+      const data = await res.json();
+      setRewriteSuggestion(data.rewritten);
+    } catch (err: any) {
+      alert(err.message || "Rewrite failed.");
+    } finally {
+      setLoadingRewrite(false);
+    }
+  };
+
+  const acceptRewrite = () => {
+    if (!rewriteSuggestion) return;
+    const { from, to } = editor.state.selection;
+    editor.chain().focus().deleteRange({ from, to }).insertContent(rewriteSuggestion).run();
+    setRewriteSuggestion(null);
+  };
 
   const btnClass = (active: boolean) =>
     `p-1.5 rounded transition-colors ${active ? "bg-brand-light text-brand" : "hover:bg-stone-100 text-stone-600"}`;
@@ -145,6 +181,10 @@ function SectionEditor({ initialContent, onChange }: { initialContent: string; o
             <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={btnClass(editor.isActive("orderedList"))} title="Numbered list">
               <ListOrdered className="h-3.5 w-3.5" />
             </button>
+            <button type="button" onClick={handleRewrite} disabled={loadingRewrite} className="p-1.5 rounded hover:bg-stone-100 text-stone-600 transition-colors disabled:opacity-50 flex items-center gap-1 text-xs font-medium" title="Rewrite selected text">
+              {loadingRewrite ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+              <span>Rewrite</span>
+            </button>
             <select
               onChange={(e) => { if (e.target.value) editor.chain().focus().setFontFamily(e.target.value).run(); }}
               defaultValue=""
@@ -176,6 +216,16 @@ function SectionEditor({ initialContent, onChange }: { initialContent: string; o
         )}
 
         <EditorContent editor={editor} className="prose prose-sm md:prose-base max-w-none focus:outline-none font-serif leading-relaxed" />
+        {rewriteSuggestion && (
+          <div className="mt-4 pt-4 border-t border-stone-200 bg-brand-light/20 -mx-10 md:-mx-16 px-10 md:px-16 py-4">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-brand block mb-2">Suggested Rewrite</span>
+            <p className="text-sm font-serif text-ink leading-relaxed mb-3">{rewriteSuggestion}</p>
+            <div className="flex gap-2">
+              <button onClick={acceptRewrite} className="bg-brand text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-brand-hover">Accept</button>
+              <button onClick={() => setRewriteSuggestion(null)} className="bg-stone-100 text-ink text-xs font-bold px-3 py-1.5 rounded hover:bg-stone-200">Dismiss</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2004,7 +2054,7 @@ export default function Workspace() {
                             <div className="p-6 md:p-8 space-y-4">
                               {editingSectionId === sec.id ? (
                                 <div className="space-y-3">
-                                  <SectionEditor initialContent={editDraft} onChange={(html) => setEditDraft(html)} />
+                                  <SectionEditor initialContent={editDraft} onChange={(html) => setEditDraft(html)} sectionId={sec.id} apiBaseUrl={apiBaseUrl} token={token} />
                                   <div className="flex justify-end gap-2">
                                     <button
                                       onClick={handleCancelEdit}
