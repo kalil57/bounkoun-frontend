@@ -1,5 +1,8 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { TextStyle } from "@tiptap/extension-text-style";
+import FontFamily from "@tiptap/extension-font-family";
+import { FontSize } from "../lib/FontSizeExtension";
 import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -96,7 +99,7 @@ interface LiteratureRecommendation {
 function SectionEditor({ initialContent, onChange }: { initialContent: string; onChange: (html: string) => void }) {
   const [showToolbar, setShowToolbar] = useState(false);
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit, TextStyle, FontFamily, FontSize],
     content: initialContent,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
@@ -137,6 +140,33 @@ function SectionEditor({ initialContent, onChange }: { initialContent: string; o
             <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={btnClass(editor.isActive("orderedList"))} title="Numbered list">
               <ListOrdered className="h-3.5 w-3.5" />
             </button>
+            <select
+              onChange={(e) => { if (e.target.value) editor.chain().focus().setFontFamily(e.target.value).run(); }}
+              defaultValue=""
+              className="text-xs border border-stone-300 rounded px-1.5 py-1 bg-white text-ink ml-1"
+              title="Font"
+            >
+              <option value="" disabled>Font</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Arial">Arial</option>
+              <option value="Calibri">Calibri</option>
+              <option value="Cambria">Cambria</option>
+              <option value="Georgia">Georgia</option>
+            </select>
+            <select
+              onChange={(e) => { if (e.target.value) editor.chain().focus().setFontSize(e.target.value).run(); }}
+              defaultValue=""
+              className="text-xs border border-stone-300 rounded px-1.5 py-1 bg-white text-ink"
+              title="Size"
+            >
+              <option value="" disabled>Size</option>
+              <option value="10pt">10</option>
+              <option value="11pt">11</option>
+              <option value="12pt">12</option>
+              <option value="14pt">14</option>
+              <option value="16pt">16</option>
+              <option value="18pt">18</option>
+            </select>
           </div>
         )}
 
