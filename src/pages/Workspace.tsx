@@ -102,8 +102,10 @@ function SectionEditor({ initialContent, onChange }: { initialContent: string; o
   });
 
   return (
-    <div className="border border-stone-300 rounded-lg bg-white">
-      <EditorContent editor={editor} className="prose prose-sm max-w-none p-4 min-h-[200px] focus:outline-none font-serif" />
+    <div className="bg-stone-100 rounded-lg py-8 px-4 md:px-8">
+      <div className="bg-white shadow-md mx-auto max-w-2xl min-h-[500px] px-10 py-12 md:px-16 md:py-16">
+        <EditorContent editor={editor} className="prose prose-sm md:prose-base max-w-none focus:outline-none font-serif leading-relaxed" />
+      </div>
     </div>
   );
 }
