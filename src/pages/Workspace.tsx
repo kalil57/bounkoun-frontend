@@ -32,7 +32,8 @@ import {
   Heading2,
   ListOrdered,
   MoreHorizontal,
-  Wand2
+  Wand2,
+  AtSign
 } from "lucide-react";
 
 interface Project {
@@ -99,7 +100,7 @@ interface LiteratureRecommendation {
 }
 
 
-function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token }: { initialContent: string; onChange: (html: string) => void; sectionId: string; apiBaseUrl: string; token: string | null }) {
+function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token, shortlist }: { initialContent: string; onChange: (html: string) => void; sectionId: string; apiBaseUrl: string; token: string | null; shortlist: Paper[] }) {
   const [showToolbar, setShowToolbar] = useState(false);
   const editor = useEditor({
     extensions: [StarterKit, TextStyle, FontFamily, FontSize, Underline],
@@ -111,6 +112,8 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token 
 
   const [rewriteSuggestion, setRewriteSuggestion] = useState<string | null>(null);
   const [loadingRewrite, setLoadingRewrite] = useState(false);
+  const [showCitePanel, setShowCitePanel] = useState(false);
+  const [citeQuery, setCiteQuery] = useState("");
 
   if (!editor) return null;
 
@@ -145,6 +148,19 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token 
     editor.chain().focus().deleteRange({ from, to }).insertContent(rewriteSuggestion).run();
     setRewriteSuggestion(null);
   };
+
+  const insertCitation = (paper: Paper) => {
+    const author = (paper.authors && paper.authors[0]) || "Unknown";
+    const year = paper.year || "n.d.";
+    editor.chain().focus().insertContent(`(${author}, ${year}) `).run();
+    setShowCitePanel(false);
+    setCiteQuery("");
+  };
+
+  const filteredShortlist = shortlist.filter((p) =>
+    p.title.toLowerCase().includes(citeQuery.toLowerCase()) ||
+    (p.authors || []).some((a) => a.toLowerCase().includes(citeQuery.toLowerCase()))
+  );
 
   const btnClass = (active: boolean) =>
     `p-1.5 rounded transition-colors ${active ? "bg-brand-light text-brand" : "hover:bg-stone-100 text-stone-600"}`;
@@ -185,6 +201,10 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token 
               {loadingRewrite ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
               <span>Rewrite</span>
             </button>
+            <button type="button" onClick={() => setShowCitePanel((v) => !v)} className="p-1.5 rounded hover:bg-stone-100 text-stone-600 transition-colors flex items-center gap-1 text-xs font-medium" title="Insert citation">
+              <AtSign className="h-3.5 w-3.5" />
+              <span>Cite</span>
+            </button>
             <select
               onChange={(e) => { if (e.target.value) editor.chain().focus().setFontFamily(e.target.value).run(); }}
               defaultValue=""
@@ -212,6 +232,35 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token 
               <option value="16pt">16</option>
               <option value="18pt">18</option>
             </select>
+          </div>
+        )}
+
+        {showCitePanel && (
+          <div className="mb-4 p-3 bg-stone-50 border border-stone-200 rounded-lg">
+            <input
+              type="text"
+              value={citeQuery}
+              onChange={(e) => setCiteQuery(e.target.value)}
+              placeholder="Search your shortlisted papers..."
+              className="w-full text-xs border border-stone-300 rounded px-2 py-1.5 mb-2 bg-white"
+              autoFocus
+            />
+            <div className="max-h-40 overflow-y-auto space-y-1">
+              {filteredShortlist.length === 0 ? (
+                <p className="text-xs text-ink-muted px-1">No matching papers in your shortlist.</p>
+              ) : (
+                filteredShortlist.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => insertCitation(p)}
+                    className="w-full text-left text-xs px-2 py-1.5 rounded hover:bg-white bg-transparent transition-colors"
+                  >
+                    <span className="font-medium text-ink">{p.title}</span>
+                    <span className="text-ink-muted block">{(p.authors || []).join(", ")} ({p.year || "n.d."})</span>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         )}
 
@@ -2054,7 +2103,7 @@ export default function Workspace() {
                             <div className="p-6 md:p-8 space-y-4">
                               {editingSectionId === sec.id ? (
                                 <div className="space-y-3">
-                                  <SectionEditor initialContent={editDraft} onChange={(html) => setEditDraft(html)} sectionId={sec.id} apiBaseUrl={apiBaseUrl} token={token} />
+                                  <SectionEditor initialContent={editDraft} onChange={(html) => setEditDraft(html)} sectionId={sec.id} apiBaseUrl={apiBaseUrl} token={token} shortlist={shortlist} />
                                   <div className="flex justify-end gap-2">
                                     <button
                                       onClick={handleCancelEdit}
