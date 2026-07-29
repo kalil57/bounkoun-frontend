@@ -33,7 +33,9 @@ import {
   ListOrdered,
   MoreHorizontal,
   Wand2,
-  AtSign
+  AtSign,
+  UploadCloud,
+  Database
 } from "lucide-react";
 
 interface Project {
@@ -88,6 +90,20 @@ interface Paper {
   abstract: string;
   url?: string;
   is_selected?: boolean;
+}
+
+interface DatasetColumn {
+  name: string;
+  type: string;
+  missing_count: number;
+}
+interface Dataset {
+  id: string;
+  filename: string;
+  row_count: number;
+  columns: DatasetColumn[];
+  summary: Record<string, any>;
+  created_at: string;
 }
 
 interface LiteratureRecommendation {
@@ -354,6 +370,12 @@ export default function Workspace() {
   const [fontFamilyDraft, setFontFamilyDraft] = useState("Times New Roman");
   const [savingStylePreference, setSavingStylePreference] = useState(false);
 
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [uploadingDataset, setUploadingDataset] = useState(false);
+  const [datasetError, setDatasetError] = useState<string | null>(null);
+  const datasetInputRef = useRef<HTMLInputElement>(null);
+  const [expandedDatasetId, setExpandedDatasetId] = useState<string | null>(null);
+
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [titleDraft, setTitleDraft] = useState("");
 
@@ -389,6 +411,14 @@ export default function Workspace() {
       if (sectionsRes.ok) {
         const sectionsData = await sectionsRes.json();
         setSections((sectionsData || []).sort((a: Section, b: Section) => a.order_index - b.order_index));
+      }
+
+      const datasetsRes = await fetch(`${apiBaseUrl}/dataset/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (datasetsRes.ok) {
+        const datasetsData = await datasetsRes.json();
+        setDatasets(datasetsData || []);
       }
 
       const eventsRes = await fetch(`${apiBaseUrl}/events/${id}`);
@@ -901,6 +931,33 @@ export default function Workspace() {
       alert(err.message || "Failed to save style preference.");
     } finally {
       setSavingStylePreference(false);
+    }
+  };
+
+  const handleDatasetUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingDataset(true);
+    setDatasetError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${apiBaseUrl}/dataset/${id}/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Could not process this file.");
+      }
+      const data = await res.json();
+      setDatasets((prev) => [data, ...prev]);
+      if (datasetInputRef.current) datasetInputRef.current.value = "";
+    } catch (err: any) {
+      setDatasetError(err.message || "Upload failed.");
+    } finally {
+      setUploadingDataset(false);
     }
   };
 
@@ -1817,6 +1874,74 @@ export default function Workspace() {
                     </div>
                   </div>
 
+                  <div className="rounded-lg border border-border-warm bg-white p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="serif-heading text-sm font-bold text-brand flex items-center gap-1.5">
+                        <Database className="h-4 w-4" />
+                        <span>Your Datasets</span>
+                      </h4>
+                    </div>
+                    <p className="text-xs text-ink-muted">
+                      Upload real data you collected (CSV or Excel) to ground your Findings chapter. Bounkoun analyzes it automatically -- you interpret what it means.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        accept=".csv,.tsv,.xlsx,.xls"
+                        ref={datasetInputRef}
+                        onChange={handleDatasetUpload}
+                        disabled={uploadingDataset}
+                        className="text-xs text-ink-muted file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-light file:text-brand hover:file:bg-brand hover:file:text-white file:cursor-pointer cursor-pointer"
+                      />
+                      {uploadingDataset && <Loader2 className="h-4 w-4 animate-spin text-brand" />}
+                    </div>
+                    {datasetError && <p className="text-xs text-red-700 font-medium">{datasetError}</p>}
+
+                    {datasets.length > 0 && (
+                      <div className="space-y-2 pt-2">
+                        {datasets.map((ds) => (
+                          <div key={ds.id} className="border border-stone-200 rounded-lg overflow-hidden">
+                            <button
+                              onClick={() => setExpandedDatasetId(expandedDatasetId === ds.id ? null : ds.id)}
+                              className="w-full flex items-center justify-between p-3 bg-stone-50 hover:bg-stone-100 transition-colors text-left"
+                            >
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-3.5 w-3.5 text-brand" />
+                                <span className="text-xs font-semibold text-ink">{ds.filename}</span>
+                                <span className="text-[10px] text-ink-muted">({ds.row_count} rows, {ds.columns.length} columns)</span>
+                              </div>
+                            </button>
+                            {expandedDatasetId === ds.id && (
+                              <div className="p-3 space-y-2 bg-white">
+                                {ds.columns.map((col) => (
+                                  <div key={col.name} className="text-xs border-b border-stone-100 pb-2">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-semibold text-ink">{col.name}</span>
+                                      <span className="text-[10px] uppercase bg-brand-light text-brand px-1.5 py-0.5 rounded">{col.type}</span>
+                                      {col.missing_count > 0 && (
+                                        <span className="text-[10px] text-amber-700">{col.missing_count} missing</span>
+                                      )}
+                                    </div>
+                                    {ds.summary[col.name] && col.type === "numeric" && (
+                                      <p className="text-ink-muted">
+                                        mean {ds.summary[col.name].mean}, median {ds.summary[col.name].median}, min {ds.summary[col.name].min}, max {ds.summary[col.name].max}, std dev {ds.summary[col.name].std_dev}
+                                      </p>
+                                    )}
+                                    {ds.summary[col.name] && col.type === "categorical" && (
+                                      <p className="text-ink-muted">
+                                        {ds.summary[col.name].unique_count} unique values -- top: {ds.summary[col.name].top_values.map((t: any) => `${t.value} (${t.count})`).join(", ")}
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="rounded-lg border border-border-warm bg-cream p-6 text-center space-y-4">
                     <FileText className="h-8 w-8 text-brand mx-auto stroke-1" />
                     <div>
@@ -1934,6 +2059,74 @@ export default function Workspace() {
                         {savingStylePreference ? "Saving..." : "Save Preference"}
                       </button>
                     </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border-warm bg-white p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="serif-heading text-sm font-bold text-brand flex items-center gap-1.5">
+                        <Database className="h-4 w-4" />
+                        <span>Your Datasets</span>
+                      </h4>
+                    </div>
+                    <p className="text-xs text-ink-muted">
+                      Upload real data you collected (CSV or Excel) to ground your Findings chapter. Bounkoun analyzes it automatically -- you interpret what it means.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        accept=".csv,.tsv,.xlsx,.xls"
+                        ref={datasetInputRef}
+                        onChange={handleDatasetUpload}
+                        disabled={uploadingDataset}
+                        className="text-xs text-ink-muted file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-light file:text-brand hover:file:bg-brand hover:file:text-white file:cursor-pointer cursor-pointer"
+                      />
+                      {uploadingDataset && <Loader2 className="h-4 w-4 animate-spin text-brand" />}
+                    </div>
+                    {datasetError && <p className="text-xs text-red-700 font-medium">{datasetError}</p>}
+
+                    {datasets.length > 0 && (
+                      <div className="space-y-2 pt-2">
+                        {datasets.map((ds) => (
+                          <div key={ds.id} className="border border-stone-200 rounded-lg overflow-hidden">
+                            <button
+                              onClick={() => setExpandedDatasetId(expandedDatasetId === ds.id ? null : ds.id)}
+                              className="w-full flex items-center justify-between p-3 bg-stone-50 hover:bg-stone-100 transition-colors text-left"
+                            >
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-3.5 w-3.5 text-brand" />
+                                <span className="text-xs font-semibold text-ink">{ds.filename}</span>
+                                <span className="text-[10px] text-ink-muted">({ds.row_count} rows, {ds.columns.length} columns)</span>
+                              </div>
+                            </button>
+                            {expandedDatasetId === ds.id && (
+                              <div className="p-3 space-y-2 bg-white">
+                                {ds.columns.map((col) => (
+                                  <div key={col.name} className="text-xs border-b border-stone-100 pb-2">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-semibold text-ink">{col.name}</span>
+                                      <span className="text-[10px] uppercase bg-brand-light text-brand px-1.5 py-0.5 rounded">{col.type}</span>
+                                      {col.missing_count > 0 && (
+                                        <span className="text-[10px] text-amber-700">{col.missing_count} missing</span>
+                                      )}
+                                    </div>
+                                    {ds.summary[col.name] && col.type === "numeric" && (
+                                      <p className="text-ink-muted">
+                                        mean {ds.summary[col.name].mean}, median {ds.summary[col.name].median}, min {ds.summary[col.name].min}, max {ds.summary[col.name].max}, std dev {ds.summary[col.name].std_dev}
+                                      </p>
+                                    )}
+                                    {ds.summary[col.name] && col.type === "categorical" && (
+                                      <p className="text-ink-muted">
+                                        {ds.summary[col.name].unique_count} unique values -- top: {ds.summary[col.name].top_values.map((t: any) => `${t.value} (${t.count})`).join(", ")}
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-6">
