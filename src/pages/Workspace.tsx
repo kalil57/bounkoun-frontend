@@ -37,6 +37,7 @@ import {
   UploadCloud,
   Database
 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface Project {
   id: string;
@@ -1929,8 +1930,21 @@ export default function Workspace() {
                                     )}
                                     {ds.summary[col.name] && col.type === "categorical" && (
                                       <p className="text-ink-muted">
-                                        {ds.summary[col.name].unique_count} unique values -- top: {ds.summary[col.name].top_values.map((t: any) => `${t.value} (${t.count})`).join(", ")}
+                                        {ds.summary[col.name].unique_count} unique values
                                       </p>
+                                    )}
+                                    {ds.summary[col.name] && col.type === "categorical" && ds.summary[col.name].top_values && ds.summary[col.name].top_values.length > 0 && (
+                                      <div className="h-40 mt-2">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                          <BarChart data={ds.summary[col.name].top_values} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e7e0d5" />
+                                            <XAxis dataKey="value" tick={{ fontSize: 10 }} />
+                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                                            <Tooltip />
+                                            <Bar dataKey="count" fill="#8b5e3c" radius={[3, 3, 0, 0]} />
+                                          </BarChart>
+                                        </ResponsiveContainer>
+                                      </div>
                                     )}
                                   </div>
                                 ))}
@@ -2116,8 +2130,21 @@ export default function Workspace() {
                                     )}
                                     {ds.summary[col.name] && col.type === "categorical" && (
                                       <p className="text-ink-muted">
-                                        {ds.summary[col.name].unique_count} unique values -- top: {ds.summary[col.name].top_values.map((t: any) => `${t.value} (${t.count})`).join(", ")}
+                                        {ds.summary[col.name].unique_count} unique values
                                       </p>
+                                    )}
+                                    {ds.summary[col.name] && col.type === "categorical" && ds.summary[col.name].top_values && ds.summary[col.name].top_values.length > 0 && (
+                                      <div className="h-40 mt-2">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                          <BarChart data={ds.summary[col.name].top_values} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e7e0d5" />
+                                            <XAxis dataKey="value" tick={{ fontSize: 10 }} />
+                                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                                            <Tooltip />
+                                            <Bar dataKey="count" fill="#8b5e3c" radius={[3, 3, 0, 0]} />
+                                          </BarChart>
+                                        </ResponsiveContainer>
+                                      </div>
                                     )}
                                   </div>
                                 ))}
