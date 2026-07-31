@@ -104,6 +104,7 @@ interface Dataset {
   row_count: number;
   columns: DatasetColumn[];
   summary: Record<string, any>;
+  correlations: { column1: string; column2: string; r: number; n: number; strength: string; direction: string }[];
   created_at: string;
 }
 
@@ -1948,6 +1949,21 @@ export default function Workspace() {
                                     )}
                                   </div>
                                 ))}
+                                {ds.correlations && ds.correlations.length > 0 && (
+                                  <div className="pt-2 mt-2 border-t border-stone-200">
+                                    <span className="text-xs font-semibold text-ink block mb-2">Relationships Between Numeric Columns</span>
+                                    <div className="space-y-1.5">
+                                      {ds.correlations.map((c, i) => (
+                                        <div key={i} className="flex items-center justify-between text-xs bg-stone-50 rounded px-2 py-1.5">
+                                          <span className="text-ink">{c.column1} &harr; {c.column2}</span>
+                                          <span className={`font-semibold ${c.strength === "strong" ? "text-brand" : c.strength === "moderate" ? "text-amber-700" : "text-ink-muted"}`}>
+                                            r = {c.r} ({c.strength} {c.direction})
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -2148,6 +2164,21 @@ export default function Workspace() {
                                     )}
                                   </div>
                                 ))}
+                                {ds.correlations && ds.correlations.length > 0 && (
+                                  <div className="pt-2 mt-2 border-t border-stone-200">
+                                    <span className="text-xs font-semibold text-ink block mb-2">Relationships Between Numeric Columns</span>
+                                    <div className="space-y-1.5">
+                                      {ds.correlations.map((c, i) => (
+                                        <div key={i} className="flex items-center justify-between text-xs bg-stone-50 rounded px-2 py-1.5">
+                                          <span className="text-ink">{c.column1} &harr; {c.column2}</span>
+                                          <span className={`font-semibold ${c.strength === "strong" ? "text-brand" : c.strength === "moderate" ? "text-amber-700" : "text-ink-muted"}`}>
+                                            r = {c.r} ({c.strength} {c.direction})
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
