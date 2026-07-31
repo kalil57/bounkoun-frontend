@@ -37,7 +37,7 @@ import {
   UploadCloud,
   Database
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface Project {
   id: string;
@@ -377,6 +377,10 @@ export default function Workspace() {
   const [datasetError, setDatasetError] = useState<string | null>(null);
   const datasetInputRef = useRef<HTMLInputElement>(null);
   const [expandedDatasetId, setExpandedDatasetId] = useState<string | null>(null);
+
+  const [scatterData, setScatterData] = useState<{ x: number; y: number }[] | null>(null);
+  const [scatterPair, setScatterPair] = useState<{ col1: string; col2: string } | null>(null);
+  const [loadingScatter, setLoadingScatter] = useState(false);
 
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [titleDraft, setTitleDraft] = useState("");
@@ -960,6 +964,24 @@ export default function Workspace() {
       setDatasetError(err.message || "Upload failed.");
     } finally {
       setUploadingDataset(false);
+    }
+  };
+
+  const handleShowScatter = async (datasetId: string, col1: string, col2: string) => {
+    setLoadingScatter(true);
+    setScatterPair({ col1, col2 });
+    setScatterData(null);
+    try {
+      const res = await fetch(`${apiBaseUrl}/dataset/points/${datasetId}?col1=${encodeURIComponent(col1)}&col2=${encodeURIComponent(col2)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Could not load chart data.");
+      const data = await res.json();
+      setScatterData(data);
+    } catch (err: any) {
+      alert(err.message || "Failed to load scatter plot.");
+    } finally {
+      setLoadingScatter(false);
     }
   };
 
@@ -1954,14 +1976,44 @@ export default function Workspace() {
                                     <span className="text-xs font-semibold text-ink block mb-2">Relationships Between Numeric Columns</span>
                                     <div className="space-y-1.5">
                                       {ds.correlations.map((c, i) => (
-                                        <div key={i} className="flex items-center justify-between text-xs bg-stone-50 rounded px-2 py-1.5">
+                                        <button
+                                          key={i}
+                                          onClick={() => handleShowScatter(ds.id, c.column1, c.column2)}
+                                          className="w-full flex items-center justify-between text-xs bg-stone-50 hover:bg-stone-100 rounded px-2 py-1.5 transition-colors text-left"
+                                        >
                                           <span className="text-ink">{c.column1} &harr; {c.column2}</span>
                                           <span className={`font-semibold ${c.strength === "strong" ? "text-brand" : c.strength === "moderate" ? "text-amber-700" : "text-ink-muted"}`}>
                                             r = {c.r} ({c.strength} {c.direction})
                                           </span>
-                                        </div>
+                                        </button>
                                       ))}
                                     </div>
+                                    {scatterPair && scatterPair.col1 === undefined ? null : null}
+                                    {scatterPair && ds.correlations.some((c) => c.column1 === scatterPair.col1 && c.column2 === scatterPair.col2) && (
+                                      <div className="mt-3 pt-3 border-t border-stone-200">
+                                        <span className="text-xs font-semibold text-ink block mb-2">{scatterPair.col1} vs {scatterPair.col2}</span>
+                                        {loadingScatter ? (
+                                          <div className="flex items-center gap-2 text-xs text-ink-muted">
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            <span>Loading chart...</span>
+                                          </div>
+                                        ) : scatterData && scatterData.length > 0 ? (
+                                          <div className="h-56">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                              <ScatterChart margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#e7e0d5" />
+                                                <XAxis type="number" dataKey="x" name={scatterPair.col1} tick={{ fontSize: 10 }} />
+                                                <YAxis type="number" dataKey="y" name={scatterPair.col2} tick={{ fontSize: 10 }} />
+                                                <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                                                <Scatter data={scatterData} fill="#8b5e3c" />
+                                              </ScatterChart>
+                                            </ResponsiveContainer>
+                                          </div>
+                                        ) : (
+                                          <p className="text-xs text-ink-muted">No chart data available.</p>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -2169,14 +2221,44 @@ export default function Workspace() {
                                     <span className="text-xs font-semibold text-ink block mb-2">Relationships Between Numeric Columns</span>
                                     <div className="space-y-1.5">
                                       {ds.correlations.map((c, i) => (
-                                        <div key={i} className="flex items-center justify-between text-xs bg-stone-50 rounded px-2 py-1.5">
+                                        <button
+                                          key={i}
+                                          onClick={() => handleShowScatter(ds.id, c.column1, c.column2)}
+                                          className="w-full flex items-center justify-between text-xs bg-stone-50 hover:bg-stone-100 rounded px-2 py-1.5 transition-colors text-left"
+                                        >
                                           <span className="text-ink">{c.column1} &harr; {c.column2}</span>
                                           <span className={`font-semibold ${c.strength === "strong" ? "text-brand" : c.strength === "moderate" ? "text-amber-700" : "text-ink-muted"}`}>
                                             r = {c.r} ({c.strength} {c.direction})
                                           </span>
-                                        </div>
+                                        </button>
                                       ))}
                                     </div>
+                                    {scatterPair && scatterPair.col1 === undefined ? null : null}
+                                    {scatterPair && ds.correlations.some((c) => c.column1 === scatterPair.col1 && c.column2 === scatterPair.col2) && (
+                                      <div className="mt-3 pt-3 border-t border-stone-200">
+                                        <span className="text-xs font-semibold text-ink block mb-2">{scatterPair.col1} vs {scatterPair.col2}</span>
+                                        {loadingScatter ? (
+                                          <div className="flex items-center gap-2 text-xs text-ink-muted">
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            <span>Loading chart...</span>
+                                          </div>
+                                        ) : scatterData && scatterData.length > 0 ? (
+                                          <div className="h-56">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                              <ScatterChart margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#e7e0d5" />
+                                                <XAxis type="number" dataKey="x" name={scatterPair.col1} tick={{ fontSize: 10 }} />
+                                                <YAxis type="number" dataKey="y" name={scatterPair.col2} tick={{ fontSize: 10 }} />
+                                                <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+                                                <Scatter data={scatterData} fill="#8b5e3c" />
+                                              </ScatterChart>
+                                            </ResponsiveContainer>
+                                          </div>
+                                        ) : (
+                                          <p className="text-xs text-ink-muted">No chart data available.</p>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
