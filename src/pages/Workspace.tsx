@@ -1988,7 +1988,6 @@ export default function Workspace() {
                                         </button>
                                       ))}
                                     </div>
-                                    {scatterPair && scatterPair.col1 === undefined ? null : null}
                                     {scatterPair && ds.correlations.some((c) => c.column1 === scatterPair.col1 && c.column2 === scatterPair.col2) && (
                                       <div className="mt-3 pt-3 border-t border-stone-200">
                                         <span className="text-xs font-semibold text-ink block mb-2">{scatterPair.col1} vs {scatterPair.col2}</span>
@@ -2233,7 +2232,6 @@ export default function Workspace() {
                                         </button>
                                       ))}
                                     </div>
-                                    {scatterPair && scatterPair.col1 === undefined ? null : null}
                                     {scatterPair && ds.correlations.some((c) => c.column1 === scatterPair.col1 && c.column2 === scatterPair.col2) && (
                                       <div className="mt-3 pt-3 border-t border-stone-200">
                                         <span className="text-xs font-semibold text-ink block mb-2">{scatterPair.col1} vs {scatterPair.col2}</span>
