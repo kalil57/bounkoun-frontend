@@ -382,6 +382,7 @@ export default function Workspace() {
   const [scatterData, setScatterData] = useState<{ x: number; y: number }[] | null>(null);
   const [scatterPair, setScatterPair] = useState<{ col1: string; col2: string } | null>(null);
   const [loadingScatter, setLoadingScatter] = useState(false);
+  const [showAllCorrelations, setShowAllCorrelations] = useState(false);
 
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [titleDraft, setTitleDraft] = useState("");
@@ -1998,19 +1999,31 @@ export default function Workspace() {
                                   <div className="pt-2 mt-2 border-t border-stone-200">
                                     <span className="text-xs font-semibold text-ink block mb-2">Relationships Between Numeric Columns</span>
                                     <div className="space-y-1.5">
-                                      {ds.correlations.map((c, i) => (
-                                        <button
-                                          key={i}
-                                          onClick={() => handleShowScatter(ds.id, c.column1, c.column2)}
-                                          className="w-full flex items-center justify-between text-xs bg-stone-50 hover:bg-stone-100 rounded px-2 py-1.5 transition-colors text-left"
-                                        >
-                                          <span className="text-ink">{c.column1} &harr; {c.column2}</span>
-                                          <span className={`font-semibold ${c.strength === "strong" ? "text-brand" : c.strength === "moderate" ? "text-amber-700" : "text-ink-muted"}`}>
-                                            r = {c.r} ({c.strength} {c.direction})
-                                          </span>
-                                        </button>
-                                      ))}
+                                      {[...ds.correlations]
+                                        .sort((a, b) => Math.abs(b.r) - Math.abs(a.r))
+                                        .filter((c) => showAllCorrelations || c.strength === "strong" || c.strength === "moderate")
+                                        .slice(0, showAllCorrelations ? undefined : 10)
+                                        .map((c, i) => (
+                                          <button
+                                            key={i}
+                                            onClick={() => handleShowScatter(ds.id, c.column1, c.column2)}
+                                            className="w-full flex items-center justify-between text-xs bg-stone-50 hover:bg-stone-100 rounded px-2 py-1.5 transition-colors text-left"
+                                          >
+                                            <span className="text-ink">{c.column1} &harr; {c.column2}</span>
+                                            <span className={`font-semibold ${c.strength === "strong" ? "text-brand" : c.strength === "moderate" ? "text-amber-700" : "text-ink-muted"}`}>
+                                              r = {c.r} ({c.strength} {c.direction})
+                                            </span>
+                                          </button>
+                                        ))}
                                     </div>
+                                    {ds.correlations.length > 10 && (
+                                      <button
+                                        onClick={() => setShowAllCorrelations((v) => !v)}
+                                        className="text-[10px] font-semibold text-brand hover:underline mt-1"
+                                      >
+                                        {showAllCorrelations ? "Show only meaningful relationships" : `Show all ${ds.correlations.length} relationships`}
+                                      </button>
+                                    )}
                                     {scatterPair && ds.correlations.some((c) => c.column1 === scatterPair.col1 && c.column2 === scatterPair.col2) && (
                                       <div className="mt-3 pt-3 border-t border-stone-200">
                                         <span className="text-xs font-semibold text-ink block mb-2">{scatterPair.col1} vs {scatterPair.col2}</span>
@@ -2242,19 +2255,31 @@ export default function Workspace() {
                                   <div className="pt-2 mt-2 border-t border-stone-200">
                                     <span className="text-xs font-semibold text-ink block mb-2">Relationships Between Numeric Columns</span>
                                     <div className="space-y-1.5">
-                                      {ds.correlations.map((c, i) => (
-                                        <button
-                                          key={i}
-                                          onClick={() => handleShowScatter(ds.id, c.column1, c.column2)}
-                                          className="w-full flex items-center justify-between text-xs bg-stone-50 hover:bg-stone-100 rounded px-2 py-1.5 transition-colors text-left"
-                                        >
-                                          <span className="text-ink">{c.column1} &harr; {c.column2}</span>
-                                          <span className={`font-semibold ${c.strength === "strong" ? "text-brand" : c.strength === "moderate" ? "text-amber-700" : "text-ink-muted"}`}>
-                                            r = {c.r} ({c.strength} {c.direction})
-                                          </span>
-                                        </button>
-                                      ))}
+                                      {[...ds.correlations]
+                                        .sort((a, b) => Math.abs(b.r) - Math.abs(a.r))
+                                        .filter((c) => showAllCorrelations || c.strength === "strong" || c.strength === "moderate")
+                                        .slice(0, showAllCorrelations ? undefined : 10)
+                                        .map((c, i) => (
+                                          <button
+                                            key={i}
+                                            onClick={() => handleShowScatter(ds.id, c.column1, c.column2)}
+                                            className="w-full flex items-center justify-between text-xs bg-stone-50 hover:bg-stone-100 rounded px-2 py-1.5 transition-colors text-left"
+                                          >
+                                            <span className="text-ink">{c.column1} &harr; {c.column2}</span>
+                                            <span className={`font-semibold ${c.strength === "strong" ? "text-brand" : c.strength === "moderate" ? "text-amber-700" : "text-ink-muted"}`}>
+                                              r = {c.r} ({c.strength} {c.direction})
+                                            </span>
+                                          </button>
+                                        ))}
                                     </div>
+                                    {ds.correlations.length > 10 && (
+                                      <button
+                                        onClick={() => setShowAllCorrelations((v) => !v)}
+                                        className="text-[10px] font-semibold text-brand hover:underline mt-1"
+                                      >
+                                        {showAllCorrelations ? "Show only meaningful relationships" : `Show all ${ds.correlations.length} relationships`}
+                                      </button>
+                                    )}
                                     {scatterPair && ds.correlations.some((c) => c.column1 === scatterPair.col1 && c.column2 === scatterPair.col2) && (
                                       <div className="mt-3 pt-3 border-t border-stone-200">
                                         <span className="text-xs font-semibold text-ink block mb-2">{scatterPair.col1} vs {scatterPair.col2}</span>
