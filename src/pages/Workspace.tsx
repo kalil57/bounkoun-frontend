@@ -313,6 +313,7 @@ export default function Workspace() {
   const [activeStage, setActiveStage] = useState<WorkflowStep["step_name"]>("Topic");
 
   const [topicInterest, setTopicInterest] = useState("");
+  const [directTopicInput, setDirectTopicInput] = useState("");
   const [suggestedTopics, setSuggestedTopics] = useState<string[]>([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [topicsError, setTopicsError] = useState<string | null>(null);
@@ -1249,6 +1250,28 @@ export default function Workspace() {
                             <span>Suggest Thesis Topics (AI)</span>
                           </>
                         )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-border-warm p-5 rounded-lg text-left">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-ink-muted mb-2">
+                      Already Have a Topic?
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={directTopicInput}
+                        onChange={(e) => setDirectTopicInput(e.target.value)}
+                        placeholder="Type your thesis topic here..."
+                        className="flex-1 text-sm border border-stone-300 rounded-lg p-3 bg-white text-ink"
+                      />
+                      <button
+                        onClick={() => handleSelectTopic(directTopicInput)}
+                        disabled={!directTopicInput.trim()}
+                        className="bg-brand hover:bg-brand-hover text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-colors disabled:opacity-40 whitespace-nowrap"
+                      >
+                        Use This Topic
                       </button>
                     </div>
                   </div>
