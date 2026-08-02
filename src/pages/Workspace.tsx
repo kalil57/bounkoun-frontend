@@ -1,3 +1,4 @@
+import { toPng } from "html-to-image";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -35,7 +36,8 @@ import {
   Wand2,
   AtSign,
   UploadCloud,
-  Database
+  Database,
+  ImageIcon
 } from "lucide-react";
 import { BarChart, Bar, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -118,7 +120,7 @@ interface LiteratureRecommendation {
 }
 
 
-function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token, shortlist }: { initialContent: string; onChange: (html: string) => void; sectionId: string; apiBaseUrl: string; token: string | null; shortlist: Paper[] }) {
+function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token, shortlist, datasets }: { initialContent: string; onChange: (html: string) => void; sectionId: string; apiBaseUrl: string; token: string | null; shortlist: Paper[]; datasets: Dataset[] }) {
   const [showToolbar, setShowToolbar] = useState(false);
   const editor = useEditor({
     extensions: [StarterKit, TextStyle, FontFamily, FontSize, Underline],
@@ -132,6 +134,12 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token,
   const [loadingRewrite, setLoadingRewrite] = useState(false);
   const [showCitePanel, setShowCitePanel] = useState(false);
   const [citeQuery, setCiteQuery] = useState("");
+  const [showFigurePanel, setShowFigurePanel] = useState(false);
+  const [selectedFigure, setSelectedFigure] = useState<any | null>(null);
+  const [figurePoints, setFigurePoints] = useState<{ x: number; y: number }[] | null>(null);
+  const [loadingFigurePoints, setLoadingFigurePoints] = useState(false);
+  const [insertingFigure, setInsertingFigure] = useState(false);
+  const captureRef = useRef<HTMLDivElement>(null);
 
   if (!editor) return null;
 
@@ -173,6 +181,53 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token,
     editor.chain().focus().insertContent(`(${author}, ${year}) `).run();
     setShowCitePanel(false);
     setCiteQuery("");
+  };
+
+  const handleSelectFigureOption = async (option: any) => {
+    setSelectedFigure(option);
+    setFigurePoints(null);
+    if (option.type === "scatter") {
+      setLoadingFigurePoints(true);
+      try {
+        const res = await fetch(`${apiBaseUrl}/dataset/points/${option.datasetId}?col1=${encodeURIComponent(option.col1)}&col2=${encodeURIComponent(option.col2)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setFigurePoints(data);
+        }
+      } catch (err) {
+        console.error("Failed to load figure points", err);
+      } finally {
+        setLoadingFigurePoints(false);
+      }
+    }
+  };
+
+  const handleInsertFigure = async () => {
+    if (!captureRef.current || !selectedFigure) return;
+    setInsertingFigure(true);
+    try {
+      const dataUrl = await toPng(captureRef.current, { backgroundColor: "#ffffff", pixelRatio: 2 });
+      const existingFigureCount = (editor.getHTML().match(/<img /g) || []).length;
+      const figureNumber = existingFigureCount + 1;
+      const caption =
+        selectedFigure.type === "bar"
+          ? `Figure ${figureNumber}: Distribution of ${selectedFigure.column}`
+          : `Figure ${figureNumber}: Relationship between ${selectedFigure.col1} and ${selectedFigure.col2} (r = ${selectedFigure.r})`;
+      editor
+        .chain()
+        .focus()
+        .insertContent(`<img src="${dataUrl}" alt="${caption}" /><p><em>${caption}</em></p><p></p>`)
+        .run();
+      setShowFigurePanel(false);
+      setSelectedFigure(null);
+      setFigurePoints(null);
+    } catch (err) {
+      alert("Could not insert this figure. Please try again.");
+    } finally {
+      setInsertingFigure(false);
+    }
   };
 
   const filteredShortlist = shortlist.filter((p) =>
@@ -222,6 +277,10 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token,
             <button type="button" onClick={() => setShowCitePanel((v) => !v)} className="p-1.5 rounded hover:bg-stone-100 text-stone-600 transition-colors flex items-center gap-1 text-xs font-medium" title="Insert citation">
               <AtSign className="h-3.5 w-3.5" />
               <span>Cite</span>
+            </button>
+            <button type="button" onClick={() => setShowFigurePanel((v) => !v)} className="p-1.5 rounded hover:bg-stone-100 text-stone-600 transition-colors flex items-center gap-1 text-xs font-medium" title="Insert figure">
+              <ImageIcon className="h-3.5 w-3.5" />
+              <span>Figure</span>
             </button>
             <select
               onChange={(e) => { if (e.target.value) editor.chain().focus().setFontFamily(e.target.value).run(); }}
@@ -279,6 +338,67 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token,
                 ))
               )}
             </div>
+          </div>
+        )}
+
+        {showFigurePanel && (
+          <div className="mb-4 p-3 bg-stone-50 border border-stone-200 rounded-lg space-y-3">
+            <span className="text-xs font-semibold text-ink block">Choose a figure to insert</span>
+            <div className="max-h-40 overflow-y-auto space-y-1">
+              {datasets.flatMap((ds) => {
+                const barOptions = ds.columns
+                  .filter((col) => col.type === "categorical" && ds.summary[col.name]?.top_values?.length > 0)
+                  .map((col) => ({ type: "bar", datasetId: ds.id, column: col.name, data: ds.summary[col.name].top_values }));
+                const scatterOptions = (ds.correlations || [])
+                  .filter((c) => c.strength === "strong" || c.strength === "moderate")
+                  .map((c) => ({ type: "scatter", datasetId: ds.id, col1: c.column1, col2: c.column2, r: c.r }));
+                return [...barOptions, ...scatterOptions];
+              }).map((option: any, i: number) => (
+                <button
+                  key={i}
+                  onClick={() => handleSelectFigureOption(option)}
+                  className="w-full text-left text-xs px-2 py-1.5 rounded hover:bg-white transition-colors"
+                >
+                  {option.type === "bar" ? `Bar chart: ${option.column}` : `Scatter: ${option.col1} vs ${option.col2} (r = ${option.r})`}
+                </button>
+              ))}
+              {datasets.length === 0 && (
+                <p className="text-xs text-ink-muted px-1">Upload a dataset first to create figures from it.</p>
+              )}
+            </div>
+
+            {selectedFigure && (
+              <div className="pt-2 border-t border-stone-200">
+                <div ref={captureRef} className="bg-white p-3" style={{ width: 400, height: 260 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    {selectedFigure.type === "bar" ? (
+                      <BarChart data={selectedFigure.data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e7e0d5" />
+                        <XAxis dataKey="value" tick={{ fontSize: 10 }} />
+                        <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                        <Bar dataKey="count" fill="#8b5e3c" radius={[3, 3, 0, 0]} />
+                      </BarChart>
+                    ) : loadingFigurePoints ? (
+                      <div />
+                    ) : (
+                      <ScatterChart margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e7e0d5" />
+                        <XAxis type="number" dataKey="x" name={selectedFigure.col1} tick={{ fontSize: 10 }} />
+                        <YAxis type="number" dataKey="y" name={selectedFigure.col2} tick={{ fontSize: 10 }} />
+                        <Scatter data={figurePoints || []} fill="#8b5e3c" />
+                      </ScatterChart>
+                    )}
+                  </ResponsiveContainer>
+                </div>
+                <button
+                  onClick={handleInsertFigure}
+                  disabled={insertingFigure || (selectedFigure.type === "scatter" && loadingFigurePoints)}
+                  className="mt-2 bg-brand hover:bg-brand-hover text-white text-xs font-bold px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+                >
+                  {insertingFigure ? "Inserting..." : "Insert into Document"}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -2482,7 +2602,7 @@ export default function Workspace() {
                             <div className="p-6 md:p-8 space-y-4">
                               {editingSectionId === sec.id ? (
                                 <div className="space-y-3">
-                                  <SectionEditor initialContent={editDraft} onChange={(html) => setEditDraft(html)} sectionId={sec.id} apiBaseUrl={apiBaseUrl} token={token} shortlist={shortlist} />
+                                  <SectionEditor initialContent={editDraft} onChange={(html) => setEditDraft(html)} sectionId={sec.id} apiBaseUrl={apiBaseUrl} token={token} shortlist={shortlist} datasets={datasets} />
                                   <div className="flex justify-end gap-2">
                                     <button
                                       onClick={handleCancelEdit}
