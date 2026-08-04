@@ -5,6 +5,10 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import FontFamily from "@tiptap/extension-font-family";
 import { FontSize } from "../lib/FontSizeExtension";
 import Underline from "@tiptap/extension-underline";
+import { Table } from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
 import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -37,7 +41,8 @@ import {
   AtSign,
   UploadCloud,
   Database,
-  ImageIcon
+  ImageIcon,
+  Table2
 } from "lucide-react";
 import { BarChart, Bar, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -123,7 +128,17 @@ interface LiteratureRecommendation {
 function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token, shortlist, datasets }: { initialContent: string; onChange: (html: string) => void; sectionId: string; apiBaseUrl: string; token: string | null; shortlist: Paper[]; datasets: Dataset[] }) {
   const [showToolbar, setShowToolbar] = useState(false);
   const editor = useEditor({
-    extensions: [StarterKit, TextStyle, FontFamily, FontSize, Underline],
+    extensions: [
+      StarterKit,
+      TextStyle,
+      FontFamily,
+      FontSize,
+      Underline,
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableHeader,
+      TableCell,
+    ],
     content: initialContent,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
@@ -181,6 +196,10 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token,
     editor.chain().focus().insertContent(`(${author}, ${year}) `).run();
     setShowCitePanel(false);
     setCiteQuery("");
+  };
+
+  const insertTable = () => {
+    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
   };
 
   const handleSelectFigureOption = async (option: any) => {
@@ -281,6 +300,10 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token,
             <button type="button" onClick={() => setShowFigurePanel((v) => !v)} className="p-1.5 rounded hover:bg-stone-100 text-stone-600 transition-colors flex items-center gap-1 text-xs font-medium" title="Insert figure">
               <ImageIcon className="h-3.5 w-3.5" />
               <span>Figure</span>
+            </button>
+            <button type="button" onClick={insertTable} className="p-1.5 rounded hover:bg-stone-100 text-stone-600 transition-colors flex items-center gap-1 text-xs font-medium" title="Insert table">
+              <Table2 className="h-3.5 w-3.5" />
+              <span>Table</span>
             </button>
             <select
               onChange={(e) => { if (e.target.value) editor.chain().focus().setFontFamily(e.target.value).run(); }}
@@ -402,7 +425,7 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token,
           </div>
         )}
 
-        <EditorContent editor={editor} className="prose prose-sm md:prose-base max-w-none focus:outline-none font-serif leading-relaxed" />
+        <EditorContent editor={editor} className="prose prose-sm md:prose-base max-w-none focus:outline-none font-serif leading-relaxed [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-stone-300 [&_td]:p-2 [&_th]:border [&_th]:border-stone-300 [&_th]:p-2 [&_th]:bg-stone-50" />
         {rewriteSuggestion && (
           <div className="mt-4 pt-4 border-t border-stone-200 bg-brand-light/20 -mx-10 md:-mx-16 px-10 md:px-16 py-4">
             <span className="text-[10px] font-bold uppercase tracking-wider text-brand block mb-2">Suggested Rewrite</span>
