@@ -42,7 +42,8 @@ import {
   UploadCloud,
   Database,
   ImageIcon,
-  Table2
+  Table2,
+  Upload
 } from "lucide-react";
 import { BarChart, Bar, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -155,6 +156,7 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token,
   const [loadingFigurePoints, setLoadingFigurePoints] = useState(false);
   const [insertingFigure, setInsertingFigure] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   if (!editor) return null;
 
@@ -249,6 +251,22 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token,
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      editor.chain().focus().insertContent(`<img src="${dataUrl}" alt="Uploaded image" />`).run();
+    };
+    reader.readAsDataURL(file);
+    if (imageInputRef.current) imageInputRef.current.value = "";
+  };
+
   const filteredShortlist = shortlist.filter((p) =>
     p.title.toLowerCase().includes(citeQuery.toLowerCase()) ||
     (p.authors || []).some((a) => a.toLowerCase().includes(citeQuery.toLowerCase()))
@@ -305,6 +323,11 @@ function SectionEditor({ initialContent, onChange, sectionId, apiBaseUrl, token,
               <Table2 className="h-3.5 w-3.5" />
               <span>Table</span>
             </button>
+            <button type="button" onClick={() => imageInputRef.current?.click()} className="p-1.5 rounded hover:bg-stone-100 text-stone-600 transition-colors flex items-center gap-1 text-xs font-medium" title="Upload your own image">
+              <Upload className="h-3.5 w-3.5" />
+              <span>Upload</span>
+            </button>
+            <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageUpload} className="hidden" />
             <select
               onChange={(e) => { if (e.target.value) editor.chain().focus().setFontFamily(e.target.value).run(); }}
               defaultValue=""
